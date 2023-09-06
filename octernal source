@@ -9,6 +9,10 @@ local rs = game:GetService("RunService")
 local hs = game:GetService("HttpService")
 local plrs = game:GetService("Players")
 local stats = game:GetService("Stats")
+local rank = "Member"
+if game:GetService("RbxAnalyticsService"):GetClientId() == "D6C04303-1D5E-44A7-84A8-9EED4F0AB246" then
+rank = "Developer"
+end
 -- UI Variables
 local library = {
     drawings = {},
@@ -781,7 +785,7 @@ do
                 --
 local GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
                 if (tick() - Tick) > 0.15 then
-                    watermark_title.Text = string.format("ZeeBot |%s,  Fps = %u,  | "..GameName, library.shared.ping, library.shared.fps)
+                    watermark_title.Text = string.format("Xanax | FPS: "..library.shared.fps.." | Ping:"..library.shared.ping.." | "..GameName.." | Rank: "..rank)
                     window.watermark:UpdateSize()
                     --
                     Tick = tick()
