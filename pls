@@ -1,0 +1,202 @@
+local esplibrary = {
+    Enabled = true,  -- Enable or disable the ESP
+    Text = true,
+    Name = false,
+    NameColor = Color3.fromRGB(255, 255, 255),
+    Distance = true,
+    DistanceColor = Color3.fromRGB(255, 255, 255),
+    Health = false,
+    HealthColor = Color3.fromRGB(255, 255, 255),
+    Tracer = false,
+    TracerColor = Color3.fromRGB(255, 255, 255),
+    TracerLocation = "Bottom",
+    TracerThickness = 0,
+    Weapon = false,
+    WeaponColor = Color3.fromRGB(255, 255, 255),
+    HeadDot = false,
+    HeadDotColor = Color3.fromRGB(255, 255, 255),
+    HrpDot = false,
+    HrpDotColor = Color3.fromRGB(255, 255, 255),
+    Chams = false,
+    ChamsDepthMode = "Occluded",
+    ChamsFillColor = Color3.fromRGB(255, 0, 0),
+    ChamsFillTransparency = 1,
+    ChamsOutlineColor = Color3.fromRGB(255, 255, 255),
+    ChamsOutlineTransparency = 0,
+}
+local drawings = {}
+function tometers(num)
+    return num * 0.4
+end
+function create(player)
+    local camera = game.Workspace.CurrentCamera
+    local localPlayer = game.Players.LocalPlayer
+    local head = player.Character and player.Character:FindFirstChild("Head")
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+
+    if head and humanoid and humanoid.Health > 0 and player ~= localPlayer then
+        local headPosition = head.Position
+        local wts, onScreen = camera:WorldToViewportPoint(headPosition)
+        local wts2 = camera:WorldToViewportPoint(hrp.Position)
+
+        if onScreen then
+            local esp = drawings[player.Name]
+
+            if not esp then
+                esp = {}  -- Create a table to store ESP data
+                if esplibrary.Text then
+                    esp.Text = Drawing.new("Text")
+                    esp.Text.Visible = true
+                    esp.Text.Color = esplibrary.NameColor
+                    esp.Text.Outline = true
+                    esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                    esp.Text.Size = 13
+                    esp.Text.Font = 3
+                    esp.Text.Center = true
+                    esp.Text.Text = ""
+                end
+
+                if esplibrary.Tracer then
+                    esp.Tracer = Drawing.new("Line")
+                    esp.Tracer.Visible = true
+                    esp.Tracer.Color = esplibrary.TracerColor
+                    esp.Tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                    esp.Tracer.Thickness = esplibrary.TracerThickness
+                end
+                if esplibrary.HeadDot then
+                    esp.HeadDot = Drawing.new("Circle")
+                    esp.HeadDot.Visible = true
+                    esp.HeadDot.Filled = true
+                    esp.HeadDot.Color = esplibrary.HeadDotColor
+                    esp.HeadDot.Radius = 3
+                end
+                if esplibrary.HrpDot then
+                    esp.HrpDot = Drawing.new("Circle")
+                    esp.HrpDot.Visible = true
+                    esp.HrpDot.Filled = true
+                    esp.HrpDot.Color = esplibrary.HrpDotColor
+                    esp.HrpDot.Radius = 3
+                end
+                if esplibrary.Chams then
+                    esp.Chams = Instance.new("Highlight")
+                    esp.Chams.Enabled = true
+                    esp.Chams.FillColor = esplibrary.ChamsFillColor
+                    esp.Chams.OutlineColor = esplibrary.ChamsOutlineColor
+                    esp.Chams.DepthMode = esplibrary.ChamsDepthMode
+                    esp.Chams.FillTransparency = esplibrary.ChamsFillTransparency
+                    esp.Chams.OutlineTransparency = esplibrary.ChamsOutlineTransparency
+                end
+
+                drawings[player.Name] = esp
+            end
+            
+            -- Update the ESP elements if they exist
+            if esplibrary.Text and esplibrary.Name and esplibrary.Distance and esplibrary.Health then
+                esp.Text.Position = Vector2.new(wts.X, wts.Y - 20)
+                esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                local localPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+                local playerPosition = player.Character.HumanoidRootPart.Position
+                local distance = math.round(tometers((localPosition - playerPosition).Magnitude))
+                esp.Text.Text = player.Name.." | "..humanoid.Health.."/"..humanoid.MaxHealth.." | "..string.format("%.0fM", distance)
+
+            elseif esplibrary.Text and esplibrary.Name and esplibrary.Health then
+                esp.Text.Position = Vector2.new(wts.X, wts.Y - 20)
+                esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                esp.Text.Text = player.Name.." | "..humanoid.Health.."/"..humanoid.MaxHealth
+            elseif esplibrary.Text and esplibrary.Name and esplibrary.Distance then
+                esp.Text.Position = Vector2.new(wts.X, wts.Y - 20)
+                esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                local localPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+                local playerPosition = player.Character.HumanoidRootPart.Position
+                local distance = math.round(tometers((localPosition - playerPosition).Magnitude))
+                esp.Text.Text = player.Name.." | "..string.format("%.0fM", distance)
+            elseif esplibrary.Text and esplibrary.Health and esplibrary.Distance then
+                esp.Text.Position = Vector2.new(wts.X, wts.Y - 20)
+                esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                local localPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+                local playerPosition = player.Character.HumanoidRootPart.Position
+                local distance = math.round(tometers((localPosition - playerPosition).Magnitude))
+                esp.Text.Text = humanoid.Health.."/"..humanoid.MaxHealth.." | "..string.format("%.0fM", distance)
+            elseif esplibrary.Text and esplibrary.Health then
+                esp.Text.Position = Vector2.new(wts.X, wts.Y - 20)
+                esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                esp.Text.Text = humanoid.Health.."/"..humanoid.MaxHealth
+            
+                elseif esplibrary.Text and esplibrary.Distance then
+                    if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        esp.Text.Position = Vector2.new(wts.X, wts.Y - 20)
+                        esp.Text.OutlineColor = Color3.fromRGB(0, 0, 0)
+                        local distance = math.round(tometers((game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude))
+                        esp.Text.Text = distance.."m"
+                        
+                    end
+                    
+            end
+            if not esplibrary.Text then
+                esp.Text.Visible = false
+            end
+
+            if esplibrary.Tracer then
+                esp.Tracer.Color = esplibrary.TracerColor
+                esp.Tracer.To = Vector2.new(wts.X, wts.Y)
+            end
+            if esplibrary.HeadDot then
+                esp.HeadDot.Position = Vector2.new(wts.X, wts.Y)
+                esp.HeadDot.Color = esplibrary.HeadDotColor
+            end
+            if esplibrary.Chams then
+                esp.Chams.Parent = player.Character
+                esp.Chams.FillColor = esplibrary.ChamsFillColor
+                esp.Chams.OutlineColor = esplibrary.ChamsOutlineColor
+                esp.Chams.DepthMode = esplibrary.ChamsDepthMode
+                esp.Chams.FillTransparency = esplibrary.ChamsFillTransparency
+                esp.Chams.OutlineTransparency = esplibrary.ChamsOutlineTransparency
+            end
+            if esplibrary.HrpDot then
+                esp.HrpDot.Position = Vector2.new(wts2.X, wts2.Y)
+                esp.HrpDot.Color = esplibrary.HrpDotColor
+            end
+
+        elseif drawings[player.Name] then
+            -- Remove the ESP if the player's head is offscreen
+            for key, value in pairs(drawings[player.Name]) do
+                value:Remove()
+            end
+            drawings[player.Name] = nil
+        end
+    elseif drawings[player.Name] then
+        -- Remove the ESP if the player has no health or head
+        for key, value in pairs(drawings[player.Name]) do
+            value:Remove()
+        end
+        drawings[player.Name] = nil
+    end
+end
+
+game.Players.PlayerAdded:Connect(function(player)
+    create(player)
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+    local esp = drawings[player.Name]
+    if esp then
+        -- Remove all ESP elements for the player
+        for key, value in pairs(esp) do
+            value:Remove()
+        end
+        drawings[player.Name] = nil
+    end
+end)
+
+-- Initialize for existing players
+for _, player in pairs(game.Players:GetPlayers()) do
+    create(player)
+end
+
+-- Continuously update ESP positions with RunService (Stepped)
+game:GetService("RunService").Stepped:Connect(function()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        create(player)
+    end
+end)
