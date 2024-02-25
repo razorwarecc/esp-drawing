@@ -1,0 +1,153 @@
+
+local ScreenGui = Instance.new("ScreenGui")
+local holder = Instance.new("ScrollingFrame")
+local UIListLayout = Instance.new("UIListLayout")
+local UIPadding_2 = Instance.new("UIPadding")
+function tween(inst, timetotween, property, value)
+	local tweenInfo = TweenInfo.new(timetotween)
+	local properties = {}
+	properties[property] = value
+	game:GetService("TweenService"):Create(inst, tweenInfo, properties):Play()
+end
+function lineartween(inst, timetotween, property, value)
+	local tweenInfo = TweenInfo.new(timetotween, Enum.EasingStyle.Linear)
+	local properties = {}
+	properties[property] = value
+	game:GetService("TweenService"):Create(inst, tweenInfo, properties):Play()
+end
+
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+holder.Name = "holder"
+holder.Parent = ScreenGui
+holder.BackgroundColor3 = Color3.new(1, 1, 1)
+holder.BackgroundTransparency = 1
+holder.BorderColor3 = Color3.new(0, 0, 0)
+holder.BorderSizePixel = 0
+holder.Position = UDim2.new(0, 0, 0.721461177, 0)
+holder.Size = UDim2.new(0, 449, 0, 183)
+holder.CanvasPosition = Vector2.new(0, 6387)
+holder.CanvasSize = UDim2.new(0, 0, 0, 0)
+holder.ScrollBarThickness = 0
+
+UIPadding_2.Parent = holder
+UIPadding_2.PaddingBottom = UDim.new(0, 20)
+UIPadding_2.PaddingLeft = UDim.new(0, 10)
+
+UIListLayout.Parent = holder
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+UIListLayout.Padding = UDim.new(0, 5)
+
+local notificationlib = {}
+
+function notificationlib.notify(originaltext, notitype, notiduration)
+	print(originaltext, notitype)
+	print(string.len(originaltext))
+	print(notiduration)
+	local mainframe = Instance.new("Frame")
+	local text = Instance.new("TextLabel")
+	local UIPadding = Instance.new("UIPadding")
+	local duration = Instance.new("Frame")
+	local UICorner = Instance.new("UICorner")
+	local UIStroke = Instance.new("UIStroke")
+	local UIGradient = Instance.new("UIGradient")
+	
+	mainframe.Name = "mainframe"
+	mainframe.Parent = holder
+	mainframe.BackgroundColor3 = Color3.new(1, 1, 1)
+	mainframe.BorderColor3 = Color3.new(0, 0, 0)
+	mainframe.BorderSizePixel = 0
+	mainframe.Position = UDim2.new(0.0122399023, 0, 0.0837138519, 0)
+	mainframe.Size = UDim2.new(0, 37, 0, 25)
+	mainframe.BackgroundTransparency = 1
+
+
+	text.Name = "text"
+	text.Parent = mainframe
+	text.BackgroundColor3 = Color3.new(1, 1, 1)
+	text.BackgroundTransparency = 1
+	text.BorderColor3 = Color3.new(0, 0, 0)
+	text.BorderSizePixel = 0
+	text.Size = UDim2.new(1, 0, 1, 0)
+	text.Font = Enum.Font.Roboto
+	text.Text = "hello"
+	text.TextColor3 = Color3.new(1, 1, 1)
+	text.TextSize = 12
+	text.TextXAlignment = Enum.TextXAlignment.Left
+	text.TextStrokeTransparency = 1
+	text.TextTransparency = 1
+	text.RichText = true
+	
+	UIPadding.Parent = text
+	UIPadding.PaddingBottom = UDim.new(0, 2)
+	UIPadding.PaddingLeft = UDim.new(0, 5)
+
+	duration.Name = "duration"
+	duration.Parent = mainframe
+	duration.BackgroundColor3 = Color3.new(1, 1, 1)
+	duration.BorderColor3 = Color3.new(0, 0, 0)
+	duration.BorderSizePixel = 0
+	duration.Position = UDim2.new(0, 0, 0.879999995, 0)
+	duration.Size = UDim2.new(1, 0, 0, 2)
+	duration.BackgroundTransparency = 1
+
+	UICorner.Parent = mainframe
+	UICorner.CornerRadius = UDim.new(0, 3)
+
+	UIStroke.Parent = mainframe
+	UIStroke.Color = Color3.fromRGB(199, 199, 199)
+	UIStroke.Transparency = 1
+	
+	UIGradient.Parent = mainframe
+	UIGradient.Color = ColorSequence.new(Color3.fromRGB(20, 20, 20), Color3.fromRGB(10, 10, 10))
+
+
+	local texttoput
+	local constant = 2.75
+	if notitype == string.lower("warning") or notitype == string.lower("warn") then
+		texttoput = "<font color='#FFFF00'>[WARNING]</font> "..originaltext
+		local len = string.len(texttoput)
+		if len <=18 then
+			constant = 2.75
+		elseif len <=23 then
+			constant = 2.93
+		elseif len <=26 then
+			constant = 3.1
+		elseif len <=29 then
+			constant = 3.15
+		elseif len <=35 then
+			constant = 3.3
+		elseif len <=40 then
+			constant = 3.4
+		elseif len >40 then
+			constant = 5.4
+		end
+		local size = string.len(texttoput) * constant
+		mainframe.Size = UDim2.new(0, size, 0, 25)	
+	elseif string.lower(notitype) == "info" or string.lower(notitype) == "def" or string.lower(notitype) == "default" then
+		texttoput = "[INFO] "..originaltext
+		local size = string.len(texttoput) * constant
+		mainframe.Size = UDim2.new(0, size, 0, 25)
+	end
+	text.Text = texttoput
+	tween(mainframe, 0.15, "BackgroundTransparency", 0)
+	tween(UIStroke, notiduration, "Transparency", 0)
+	tween(text, 0.15, "TextStrokeTransparency", 0)
+	tween(text, 0.15, "TextTransparency", 0)
+	tween(duration, 0.15, "BackgroundTransparency", 0)
+	lineartween(duration, notiduration, "Size", UDim2.new(0, 0, 0, 2))
+	delay(notiduration, function()
+		tween(mainframe, 0.15, "BackgroundTransparency", 1)
+		tween(UIStroke, notiduration, "Transparency", 1)
+		tween(text, 0.15, "TextStrokeTransparency", 1)
+		tween(text, 0.15, "TextTransparency", 1)
+		tween(duration, 0.15, "BackgroundTransparency", 1)
+		
+		delay(0.15, function()
+			mainframe:Remove()
+		end)
+	end)
+end
+return notificationlib
