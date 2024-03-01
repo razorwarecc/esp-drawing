@@ -1,0 +1,395 @@
+library = {
+    enabled = false,
+    boxes = {enabled = false, color = Color3.fromRGB(255, 255, 255), outlinecolor = Color3.fromRGB(0, 0, 0), outline = true},
+    healthbars = {enabled = false, change_colors = false, outlinecolor = Color3.fromRGB(0, 0, 0), outline = true},
+    healthtext = {enabled = false, change_colors = false, color = Color3.fromRGB(255, 255, 255)},
+    names = {enabled = false, color = Color3.fromRGB(255, 255, 255), usedisplaynames = false},
+    distance = {enabled = false, color = Color3.fromRGB(255, 255, 255), usestuds = false},
+    headdot = {enabled = false, color = Color3.fromRGB(255, 255, 255), filled = false},
+    hrpdot = {enabled = false, color = Color3.fromRGB(255, 255, 255), filled = false},
+}
+
+drawings = {}
+local new, runservice, players, localplayer, camera = Drawing.new, game:GetService("RunService"), game.Players, game.Players.LocalPlayer, workspace.CurrentCamera
+
+function wtvp(obj)
+    local viewportPoint, onScreen = camera.WorldToViewportPoint(camera, obj)
+    return Vector2.new(viewportPoint.X, viewportPoint.Y), onScreen, viewportPoint.Z
+end
+
+--[[
+    fix
+    distance crashing when the color changer line is uncommented
+    headdot crashing when the color changer line is uncommented
+    hrpdot crashing when the color changer line is uncommented
+]]
+
+function remove(player)
+    for i, v in ipairs(drawings) do
+        if v.character and v.character:IsDescendantOf(player) then
+            if v.box_outline then
+                v.box_outline:Remove()
+            end
+            if v.box then
+                v.box:Remove()
+            end
+            if v.healthbar then
+                v.healthbar:Remove()
+            end
+            if v.healthbar_outline then
+                v.healthbar_outline:Remove()
+            end
+            if v.names then
+                v.names:Remove()
+            end
+            if v.healthtext then
+                v.healthtext:Remove()
+            end
+            if v.distance then
+                v.distance:Remove()
+            end
+            if v.headdot then
+                v.headdot:Remove()
+            end
+            if v.hrpdot then
+                v.hrpdot:Remove()
+            end
+            table.remove(drawings, i)
+        end
+    end
+end
+
+function draw(player)
+    local esp = {}
+    local character = player.Character
+    if not character or player == localplayer then
+        return
+    end
+    
+    local humanoid, head, humanoidrootpart = player.Character:FindFirstChildOfClass("Humanoid"), player.Character:FindFirstChild("Head"), player.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not head or not humanoidrootpart or not humanoid then
+        return
+    end
+    if humanoid.Health <= 0 then
+        return
+    end
+    for _, existing_esp in ipairs(drawings) do
+        if existing_esp.character == player.Character then
+            return
+        end
+    end
+    esp.character = character
+        esp.box = new("Square")
+        esp.box.Visible = true
+        esp.box.ZIndex = 2
+        esp.box.Color = library.boxes.color
+        esp.box.Thickness = 1
+
+        if esp.box and library.boxes.outline then
+            esp.box_outline = new("Square")
+            esp.box_outline.Visible = false
+            esp.box_outline.Thickness = 3
+            esp.box_outline.ZIndex = 1    
+        end
+        
+        esp.healthbar = new("Square")
+        esp.healthbar.Visible = false
+        if not library.healthbars.change_colors then
+            esp.healthbar.Color = Color3.fromRGB(0, 255, 0)
+        end
+        esp.healthbar.ZIndex = 2
+        esp.healthbar.Thickness = 1
+        
+        esp.healthbar_outline = new("Square")
+        esp.healthbar_outline.Visible = false
+        esp.healthbar_outline.Thickness = 3
+        
+        esp.names = new("Text")
+        esp.names.Visible = false
+        esp.names.Color = library.names.color
+        esp.names.Size = 12
+        esp.names.Outline = true
+        esp.names.ZIndex = 3
+        esp.names.Center = true
+        esp.names.Font = 3
+        esp.names.Text = ""
+        
+        esp.healthtext = new("Text")
+        esp.healthtext.Visible = false
+        esp.healthtext.Color = library.healthtext.color
+        esp.healthtext.Size = 12
+        esp.healthtext.Outline = true
+        esp.healthtext.ZIndex = 3
+        esp.healthtext.Center = true
+        esp.healthtext.Font = 3
+        esp.healthtext.Text = ""
+
+        esp.distance = new("Text")
+        esp.distance.Visible = false
+        esp.distance.Color = library.distance.color
+        esp.distance.Size = 12
+        esp.distance.Outline = true
+        esp.distance.ZIndex = 3
+        esp.distance.Center = true
+        esp.distance.Font = 3
+        esp.distance.Text = ""
+
+        esp.headdot = new("Circle")
+        esp.headdot.Visible = false
+        esp.headdot.Radius = 3
+        esp.headdot.Color = library.headdot.color
+
+        esp.hrpdot = new("Circle")
+        esp.hrpdot.Visible = false
+        esp.hrpdot.Radius = 3
+        esp.hrpdot.Color = library.hrpdot.color
+
+    table.insert(drawings, esp)
+    
+    -- Connect to PlayerRemoving event for the newly added player
+    player.CharacterRemoving:Connect(function()
+        remove(player)
+    end)
+    player.Character.AncestryChanged:Connect(function()
+        if not player.Character.Parent then
+            remove(player)
+        end
+    end)
+    humanoid.Died:Connect(function()
+        remove(player)
+    end)
+    
+end
+
+function update()
+    for _, v in pairs(drawings) do
+        local character = v.character
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local head = character:FindFirstChild("Head")
+        if not character or not hrp or not humanoid or head then
+            remove(game.Players:GetPlayerFromCharacter(character))
+        end
+        if not library.enabled then
+            remove(game.Players:GetPlayerFromCharacter(character))
+        end
+        if character and library.enabled and head then
+            local modelcframe = character:GetModelCFrame()
+            local wts, onscreen, depth = wtvp(modelcframe.Position)
+            local headwts, _ = wtvp(character:FindFirstChild("Head").Position)
+            local hrpwts, _ = wtvp(hrp.Position)
+            if not onscreen and wts and v.names then
+                v.names.Visible = false
+            end
+            if not onscreen and wts and v.healthtext then
+                v.healthtext.Visible = false 
+            end
+            if not onscreen and wts and v.distance then
+                v.distance.Visible = false
+            end
+            if not onscreen and wts and v.headdot then
+                v.headdot.Visible = false
+            end
+            if not onscreen and wts and v.hrpdot then
+                v.hrpdot.Visible = false
+            end
+            if wts and onscreen then
+                if v.names  then
+                    if library.names.enabled then
+                        if library.names.enabled and wts and onscreen then
+                            v.names.Visible = true
+                        else
+                            v.names.Visible = false
+                        end
+                    else
+                        v.names.Visible = false
+                    end
+                end
+                if v.distance then
+                    if library.distance.enabled then
+                        v.distance.Visible = true
+                    else
+                        v.distance.Visible = false
+                    end
+                end
+                if v.headdot then
+                    if library.headdot.enabled then
+                        v.headdot.Visible = true
+                    else
+                        v.headdot.Visible = false
+                    end
+                end
+                if v.hrpdot then
+                    if library.hrpdot.enabled then
+                        v.hrpdot.Visible = true
+                    else
+                        v.hrpdot.Visible = true
+                    end
+                end
+                if v.box then
+                    if library.boxes.enabled then
+                        v.box.Visible = true
+                    else
+                        v.box.Visible = false 
+                        v.box_outline.Visible = false
+                    end
+                    if library.boxes.outline and library.boxes.enabled then
+                        v.box_outline.Visible = true
+                    else
+                        v.box_outline.Visible = false
+                    end
+                    if not library.healthbars.enabled and v.healthbar_outline then
+                        v.healthbar_outline:Remove()
+                    end
+                    if library.healthbars.enabled then
+                        v.healthbar.Visible = true
+                    else
+                        v.healthbar.Visible = false
+                        v.healthbar_outline.Visible = false
+                    end 
+                    if library.healthtext.enabled then
+                        v.healthtext.Visible = true
+                    else
+                        v.healthtext.Visible = false
+                    end
+
+                    if depth then
+                        local scale = 1 / (depth * math.tan(math.rad(camera.FieldOfView / 2)) * 2) * 1000;
+                        local width, height = math.round(4 * scale), math.round(5 * scale);
+                        local x, y = math.round(wts.X), math.round(wts.Y)
+                        v.box.Size = Vector2.new(width, height)
+                        v.box.Position = Vector2.new(x - width / 2, y - height / 2);
+                        v.box.Color = library.boxes.color
+                        v.box.ZIndex = 2
+                        v.healthbar.Position = Vector2.new(v.box.Position.X - 3, v.box.Position.Y + v.box.Size.Y - v.healthbar.Size.Y)
+                        if humanoid then
+                            v.healthbar.Size = Vector2.new(0, v.box.Size.Y * (humanoid.Health / humanoid.MaxHealth))
+                        else
+                            remove(game.Players:GetPlayerFromCharacter(character))
+                        end
+                        v.healthbar_outline.Position = v.healthbar.Position
+                        v.healthbar_outline.Size = v.healthbar.Size
+
+                        if library.healthbars.change_colors then
+                            if humanoid.Health <= 25 then
+                                v.healthbar.Color = Color3.fromRGB(255, 0, 0)
+                            elseif humanoid.Health > 25 and humanoid.Health < 51 then
+                                v.healthbar.Color = Color3.fromRGB(255, 255, 0)
+                            elseif humanoid.Health > 50 then
+                                v.healthbar.Color = Color3.fromRGB(0, 255, 0)
+                            end
+                        end
+                        if library.boxes.outline and library.boxes.enabled then
+                            v.box_outline.Visible = true
+                            v.box_outline.Size = v.box.Size
+                            v.box_outline.Position = v.box.Position
+                            v.box_outline.Color = library.boxes.outlinecolor
+                        else
+                            v.box_outline.Visible = false
+                        end
+                        if library.healthbars.outline then
+                            v.healthbar_outline.Visible = true
+                            v.healthbar_outline.Color = library.healthbars.outlinecolor
+                        else
+                            v.healthbar_outline.Visible = false
+                        end
+                        
+                        if library.names.enabled then
+                            v.names.Position = Vector2.new(v.box.Position.X + v.box.Size.X / 2, v.box.Position.Y - 12)
+                            v.names.Visible = true
+                            v.names.Color = library.names.color
+                            local player = players:GetPlayerFromCharacter(character)
+                            if player then
+                                v.names.Text = player.Name
+                            else
+                                remove(player)
+                            end
+                        end
+                        
+                        if library.headdot.enabled then
+                            v.headdot.Visible = true
+                            v.headdot.Color = library.headdot.color
+                            v.headdot.Filled = library.headdot.filled
+                            if head then
+                                v.headdot.Position = Vector2.new(headwts.X, headwts.Y)
+                            else
+                                remove(game.Players:GetPlayerFromCharacter(character))
+                            end
+                        else
+                            v.headdot.Visible = false
+                        end
+                        if library.hrpdot.enabled then
+                            v.hrpdot.Visible = true
+                            v.hrpdot.Color = library.hrpdot.color
+                            if hrp then
+                                v.hrpdot.Position = Vector2.new(hrpwts.X, hrpwts.Y)
+                            else
+                                remove(game.Players:GetPlayerFromCharacter(character))
+                            end
+                            v.hrpdot.Filled = library.hrpdot.filled
+                        else
+                            v.hrpdot.Visible = false
+                        end
+
+                        if library.distance.enabled then
+                            v.distance.Position = Vector2.new(v.box.Position.X + v.box.Size.X / 2, v.box.Position.Y + v.box.Size.Y + 8)
+                            v.distance.Visible = true
+                            v.distance.Color = library.distance.color
+                            local distance = "NaN"
+                            if localplayer.Character then
+                                if library.distance.usestuds then
+                                    distance = tostring(string.format("%.0f", localplayer.Character:FindFirstChild("HumanoidRootPart").Position - hrp.Position).Magnitude).."s"
+                                else
+                                    distance = tostring(string.format("%.0f", (localplayer.Character:FindFirstChild("HumanoidRootPart").Position - hrp.Position).Magnitude * 0.4)).."m"
+                                end
+                            end
+                            v.distance.Text = distance
+                        end 
+
+                        if library.healthtext.enabled then
+                            if humanoid then
+                                v.healthtext.Position = Vector2.new(v.box.Position.X + v.box.Size.X + 12, v.box.Position.Y)
+                                v.healthtext.Text = math.round(humanoid.Health)
+                                if library.healthtext.change_colors then
+                                    if humanoid.Health <= 25 then
+                                        v.healthtext.Color = Color3.fromRGB(255, 0, 0)
+                                    elseif humanoid.Health > 25 and humanoid.Health < 51 then
+                                        v.healthtext.Color = Color3.fromRGB(255, 255, 0)
+                                    elseif humanoid.Health > 50 then
+                                        v.healthtext.Color = Color3.fromRGB(0, 255, 0)
+                                    end
+                                else
+                                    v.healthtext.Color = library.healthtext.color
+                                end
+                            end
+                        end
+                        
+                        
+                    else
+                        v.box_outline.Visible = false
+                        v.box.Visible = false
+                        v.healthbar.Visible = false
+                        v.healthbar_outline.Visible = false
+                    end
+                end
+            else
+                if v.box then
+                    v.box_outline.Visible = false
+                    v.box.Visible = false
+                    v.healthbar.Visible = false
+                    v.healthbar_outline.Visible = false
+                end
+
+            end
+        end
+    end
+end
+
+runservice.Stepped:Connect(function()
+    for _, player in ipairs(players:GetPlayers()) do
+        draw(player)
+    end
+    update()
+end)
+
+return library
