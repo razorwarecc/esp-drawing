@@ -1,0 +1,291 @@
+local library = {
+    enabled = true,
+    maxdistance = 3000,
+    --
+    textfont = 2,
+    textsize = 12,
+    --
+    tweenhealth = false,
+    --
+    friendcheck = false,
+    visiblecheck = false,
+    --
+    distance_format = 0.4,
+    distance_measurement = "m",
+    -- BOX/ETC
+    boxes = {["enabled"] = true, ["color"] = Color3.fromRGB(255, 255, 255), ["type"] = "3d"},
+    healthbars = {["enabled"] = false},
+    healthtext = {["enabled"] = false},
+    -- TEXT
+    names = {["enabled"] = true, ["displaynames"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
+    distance = {["enabled"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
+    weapon = {["enabled"] = true, ["color"] = Color3.fromRGB(255, 255, 255)},
+    --
+    chams = {["enabled"] = false, ["color"] = Color3.fromRGB(255, 255, 255), ["transparency"] = 0},
+    glow = {["enabled"] = false, ["color"] = Color3.fromRGB(0, 0, 0), ["transparency"] = 0}
+    
+    
+}
+local utility = {}
+local connections = {}
+local drawings = {}
+local signal = loadstring(game:HttpGet("https://raw.githubusercontent.com/razorwarecc/core-drawing/main/signal3"))()
+local new, uis, runservice, players, localplayer, wtvp, camera, headoff, legoff = Drawing.new, game:GetService("UserInputService"), game:GetService("RunService"),  game:GetService("Players"), game:GetService("Players").LocalPlayer, workspace.CurrentCamera.WorldToViewportPoint, workspace.CurrentCamera,  Vector3.new(0, 0.5, 0), Vector3.new(0, 3, 0)
+library.unload = signal.new()
+function utility:draw(name, props)
+    local drawing = new(name)
+    for a, b in pairs(props) do
+        drawing[a] = b
+    end
+    return drawing
+end
+function utility:instance(name, props)
+    local instance = Instance.new(name)
+    for a, b in pairs(props) do
+        instance[a] = b
+    end
+    return instance
+end
+function utility:distance(part1, part2)
+    if part1 and part2 then
+        local distance = (part1.Position - part2.Position).Magnitude
+        return distance * library.distance_format
+    end
+    return 0
+end
+function utility:connection(signal, func)
+    local created = signal:Connect(func)
+    table.insert(connections, created)
+    return created
+end
+function utility:friendcheck(userid)
+    return localplayer:IsFriendsWith(userid) 
+end
+function utility:cham(character)
+    return utility:instance("Highlight", {Parent = character, FillTransparency = 1, OutlineTransparency = 1})
+end
+function utility:checkchar(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Head") then
+        return true
+    end
+    return false
+end
+function utility:gettool(character)
+    if character:FindFirstChildOfClass("Tool") then
+        return character:FindFirstChildOfClass("Tool").Name
+    end
+    return "None"
+end
+function utility:gethrp(character)
+    return character:FindFirstChild("HumanoidRootPart")
+end
+function utility:gethead(character)
+    return character:FindFirstChild("Head")
+end
+function utility:remove(player)
+    for a, b in pairs(drawings) do
+        if b.player == player then
+            for c, d in pairs(b) do
+                if typeof(d) == "DrawingObject" then
+                    d:Remove()
+                elseif typeof(d) == "Instance" and d:IsA("Highlight") then
+                    d:Remove()
+                end
+            end
+            table.remove(drawings, a)
+            break
+        end
+    end
+end
+function utility:espexists(player)
+    for a, b in pairs(drawings) do
+        if b.player == player then
+            return true
+        end
+    end
+    return false
+end
+function utility:create(player)
+    --
+    if not utility:checkchar(player) then
+        return
+    end
+    --
+    if utility:espexists(player) then
+        return
+    end
+    --
+    local tbl = {}
+    ----- DRAWINGS
+    -- text first since easiest
+    tbl.player = player
+    --
+    tbl.names = utility:draw("Text", {Color = library.names.color, Center = true, Visible = false, Size = library.textsize, Font = library.textfont, Outline = true})
+    tbl.distance = utility:draw("Text", {Color = library.distance.color, Center = true, Visible = false, Size = library.textsize, Font = library.textfont, Outline = true})
+    tbl.weapon = utility:draw("Text", {Color = library.weapon.color, Center = true, Visible = false, Size = library.textsize, Font = library.textfont, Outline = true})
+    --------
+    tbl.box = utility:draw("Square", {Color = library.boxes.color, Visible = false, ZIndex = 2})
+    tbl.boxoutline = utility:draw("Square", {Color = Color3.fromRGB(0, 0, 0), Visible = false, Thickness = 3})
+    --------
+    tbl.healthbar = utility:draw("Line", {Color = Color3.fromRGB(0, 255, 0), Visible = false, ZIndex = 2})
+    tbl.healthbaroutline = utility:draw("Line", {Color = Color3.fromRGB(0, 0, 0), Visible = false, Thickness = 4, ZIndex = 1})
+    tbl.healthtext = utility:draw("Text", {Color = Color3.fromRGB(0, 255, 0), Center = true, Visible = false, Size = library.textsize, Font = library.textfont, Outline = true})
+    --------
+    tbl.highlight = utility:cham(tbl.player.Character)
+    --------
+    table.insert(drawings, tbl)
+end
+local mainconnection = utility:connection(runservice.RenderStepped, function()
+    for index, drawing in pairs(drawings) do
+        local player = drawing.player
+        if utility:checkchar(player) and utility:checkchar(localplayer) then
+            local isvalid = true
+            local character = player.Character
+            local head, hrp = utility:gethead(character), utility:gethrp(character)
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            --
+            if library.friendcheck and utility:friendcheck(player.UserId) then
+                utility:remove(player)
+            end
+            if utility:distance(hrp, utility:gethrp(localplayer.Character)) > library.maxdistance then
+                isvalid = false
+            end
+            
+            local wts, onscreen = wtvp(camera, hrp.Position)
+            local boxheadwts, _ = wtvp(camera, character.Head.Position + Vector3.new(0, 0.5, 0))
+            local legwts, _ = wtvp(camera, character.Head.Position - Vector3.new(0, 5, 0))
+            -- BOXES
+            setrenderproperty(drawing.box, "Visible", (onscreen and library.enabled and library.boxes.enabled and isvalid))
+            setrenderproperty(drawing.box, "Position", Vector2.new(math.floor(wts.X) - math.floor(drawing.box.Size.X) / 2, math.floor(wts.Y) - math.floor(drawing.box.Size.Y) / 2))
+            setrenderproperty(drawing.box, "Size", Vector2.new(2222 / math.floor(wts.Z), math.floor(boxheadwts.Y) - math.floor(legwts.Y))) 
+            setrenderproperty(drawing.box, "Color", library.boxes.color)
+            --
+            setrenderproperty(drawing.boxoutline, "Visible", drawing.box.Visible)
+            setrenderproperty(drawing.boxoutline, "Size", drawing.box.Size)
+            setrenderproperty(drawing.boxoutline, "Position", drawing.box.Position)
+            --------------------------------------------------------------------------------------------------------------
+            -- NAMES
+            setrenderproperty(drawing.names, "Visible", (onscreen and library.enabled and library.names.enabled and isvalid))
+            setrenderproperty(drawing.names, "Color", library.names.color)
+            if drawing.names.Visible then
+                setrenderproperty(drawing.names, "Position", Vector2.new(drawing.box.Position.X + drawing.box.Size.X / 2, drawing.box.Position.Y + drawing.box.Size.Y / 1 - 14))
+                if library.names.displaynames then
+                    setrenderproperty(drawing.names, "Text", player.DisplayName)
+                else
+                    setrenderproperty(drawing.names, "Text", player.Name)
+                end
+            end
+            --------------------------------------------------------------------------------------------------------------
+            setrenderproperty(drawing.distance, "Visible", (onscreen and library.enabled and library.distance.enabled and isvalid))
+            setrenderproperty(drawing.distance, "Color", library.distance.color)
+            if drawing.distance.Visible then
+                setrenderproperty(drawing.distance, "Position", Vector2.new(drawing.box.Position.X + drawing.box.Size.X / 2, drawing.box.Position.Y + 3))
+                
+                if utility:checkchar(localplayer) and utility:checkchar(player) then
+                    drawing.distance.Text = tostring(math.round(utility:distance(hrp, utility:gethrp(localplayer.Character))))..library.distance_measurement
+                end
+            end
+            --------------------------------------------------------------------------------------------------------------
+            setrenderproperty(drawing.weapon, "Visible", (onscreen and library.enabled and library.weapon.enabled and isvalid))
+            setrenderproperty(drawing.weapon, "Color", library.weapon.color)
+            
+            if drawing.weapon.Visible then
+                drawing.weapon.Text = utility:gettool(character)
+                if drawing.distance.Visible then
+                    setrenderproperty(drawing.weapon, "Position", Vector2.new(drawing.distance.Position.X, drawing.distance.Position.Y + 13))
+                else
+                    setrenderproperty(drawing.weapon, "Position", Vector2.new(drawing.box.Position.X + drawing.box.Size.X / 2, drawing.box.Position.Y + 3))
+                end
+            end
+            --------------------------------------------------------------------------------------------------------------
+
+            setrenderproperty(drawing.healthbar, "Visible", (onscreen and library.enabled and library.healthbars.enabled and isvalid))
+            setrenderproperty(drawing.healthbaroutline, "Visible", drawing.healthbar.Visible)
+            do
+                if humanoid then
+                    local health, maxhealth = humanoid.Health, humanoid.MaxHealth
+                    local from = Vector2.new(drawing.box.Position.X - 5, drawing.box.Position.Y)
+                    local to = Vector2.new(from.X, from.Y + drawing.box.Size.Y * (health / maxhealth))
+
+                    setrenderproperty(drawing.healthbar, "From", from)
+                    setrenderproperty(drawing.healthbar, "To", to)
+
+                    setrenderproperty(drawing.healthbaroutline, "From", Vector2.new(from.X, from.Y + 2))
+                    setrenderproperty(drawing.healthbaroutline, "To", Vector2.new(from.X, from.Y + drawing.box.Size.Y - 2))
+                end
+            end
+            --------------------------------------------------------------------------------------------------------------
+            setrenderproperty(drawing.healthtext, "Visible", (onscreen and library.enabled and library.healthtext.enabled and isvalid))
+            if drawing.healthtext.Visible then
+                if drawing.healthbar.Visible then
+                    setrenderproperty(drawing.healthtext, "Position", Vector2.new(drawing.healthbar.To.X - 12, drawing.healthbar.To.Y))
+                else
+                    local from = Vector2.new(drawing.box.Position.X - 5, drawing.box.Position.Y)
+                    setrenderproperty(drawing.healthtext, "Position", Vector2.new(from.X, from.Y + drawing.box.Size.Y))
+                end
+                if humanoid then
+                    setrenderproperty(drawing.healthtext, "Text", math.round(humanoid.Health))
+                end
+            end
+            --------------------------------------------------------------------------------------------------------------
+            drawing.highlight.Enabled = library.enabled and isvalid
+            if drawing.highlight.Enabled then
+                if library.chams.enabled then
+                    drawing.highlight.FillTransparency = library.chams.transparency
+                    drawing.highlight.FillColor = library.chams.color
+                else
+                    drawing.highlight.FillTransparency = 1
+                end
+                if library.glow.enabled then
+                    drawing.highlight.OutlineTransparency = library.glow.transparency
+                    drawing.highlight.OutlineColor = library.glow.color
+                else
+                    drawing.highlight.OutlineTransparency = 1
+                end
+            end
+            --------------------------------------------------------------------------------------------------------------
+            if drawing.names.Font ~= library.textfont then
+                drawing.names.Font = library.textfont
+            end
+            if drawing.names.Size ~= library.textsize then
+                drawing.names.Size = library.textsize
+            end
+            ------------------------------------------------------------------
+            if drawing.distance.Font ~= library.textfont then
+                drawing.distance.Font = library.textfont
+            end
+            if drawing.distance.Size ~= library.textsize then
+                drawing.distance.Size = library.textsize
+            end
+            ------------------------------------------------------------------
+            if drawing.weapon.Font ~= library.textfont then
+                drawing.weapon.Font = library.textfont
+            end
+            if drawing.weapon.Size ~= library.textsize then
+                drawing.weapon.Size = library.textsize
+            end
+            ------------------------------------------------------------------
+            if drawing.healthtext.Font ~= library.textfont then
+                drawing.healthtext.Font = library.textfont
+            end
+            if drawing.healthtext.Size ~= library.textsize then
+                drawing.healthtext.Size = library.textsize
+            end
+        else
+            utility:remove(player)
+        end
+    end
+    for i, v in pairs(game.Players:GetPlayers()) do
+        if v ~= localplayer then
+            utility:create(v)
+        end
+    end
+end)
+utility:connection(library.unload, function()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        utility:remove(player)
+    end
+    mainconnection:Disconnect()
+end)
+return library
+--library.unload:Fire()
