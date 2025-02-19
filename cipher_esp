@@ -1,0 +1,903 @@
+if not isfolder("niggacheats") then makefolder("niggacheats") end
+if not isfolder("niggacheats/assets") then makefolder("niggacheats/assets") end
+if not isfolder("niggacheats/assets/image_esp") then makefolder("niggacheats/assets/image_esp") end
+local image_urls = {
+    ["angryafricankids"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/angry_african_kids.png",
+    ["binladen"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/bin_laden.png",
+    ["brown_is_sus"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/brown_is_sus.png",
+    ["deer"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/deer.png",
+    ["gun"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/gun.png",
+    ["herbert"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/herbert.png",
+    ["jonesy"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/jonesy.png",
+    ["georgefloyd"] = "https://raw.githubusercontent.com/razorwarecc/esp-drawing/main/image_esp_assets/georgefloyd.png"
+}
+for name, link in next, image_urls do
+    if not isfile("niggacheats/assets/image_esp/"..name..".png") then
+        local loaded = game:HttpGet(link)
+        writefile("niggacheats/assets/image_esp/"..name..".png", loaded)
+    end
+end
+local image_data = {
+    ["angryafricankids"] = readfile("niggacheats/assets/image_esp/angryafricankids.png"),
+    ["binladen"] = readfile("niggacheats/assets/image_esp/binladen.png"),
+    ["brown_is_sus"] = readfile("niggacheats/assets/image_esp/brown_is_sus.png"),
+    ["deer"] = readfile("niggacheats/assets/image_esp/deer.png"),
+    ["gun"] = readfile("niggacheats/assets/image_esp/gun.png"),
+    ["herbert"] = readfile("niggacheats/assets/image_esp/herbert.png"),
+    ["jonesy"] = readfile("niggacheats/assets/image_esp/jonesy.png"),
+    ["troll"] = readfile("niggacheats/assets/image_esp/georgefloyd.png"),
+}
+
+local runservice, replicatedstorage, players, localplayer, camera = game:GetService("RunService"), game:GetService("ReplicatedStorage"), game:GetService("Players"), game:GetService("Players").LocalPlayer, workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local wtvp = camera.WorldToViewportPoint
+
+local connections = {}
+local drawings = {}
+local utility = {}
+local library = {
+    ["enabled"] = false,
+
+    ["drawlocalplayer"] = false,
+
+    ["target"] = {enabled = false, color = Color3.fromRGB(255, 0, 0), player = nil},
+
+    ["visiblecheck"] = {enabled = false, tween = false},
+
+    ["downedcheck"] = false,
+
+    ["teamcheck"] = false,
+
+    ["friendcheck"] = false,
+
+    ["useteamcolors"] = false,
+
+    ["customcolors"] = {
+        ["friendcolor"] = {enabled = false, color = Color3.fromRGB(0, 255, 0)},
+        ["enemycolor"] = {enabled = false, color = Color3.fromRGB(255, 0, 0)},
+        ["friendlycolor"] = {enabled = false, color = Color3.fromRGB(150, 150, 255)}
+    },
+    -- options
+    ["boxes"] = {enabled = false, boxtype = "normal", color = Color3.fromRGB(255, 255, 255), filled = true, filledcolor = Color3.fromRGB(0, 0, 0), filledtransparency = 0.5},
+    ["healthbar"] = {enabled = false, autosetcolor = false, tween = false, color = Color3.fromRGB(255, 255, 255), healthycolor = Color3.fromRGB(0, 255, 0), damagedcolor = Color3.fromRGB(255, 255, 0), lowcolor = Color3.fromRGB(255, 0, 0)},
+    ["names"] = {enabled = false, font = 3, color = Color3.fromRGB(255, 255, 255), size = 14, displayname = false},
+    ["distance"] = {enabled = false, font = 3, size = 14, color = Color3.fromRGB(255, 255, 255), measurement = "s", measurement_multiplication = 1},
+    ["gun"] = {enabled = false, font = 3, color = Color3.fromRGB(255, 255, 255), size = 15},
+    ["gunstate"] = {enabled = false, font = 3, size = 14, color = Color3.fromRGB(255, 255, 255), useaimcolor = true, aimingcolor = Color3.fromRGB(255, 0, 0), notaiming = Color3.fromRGB(0, 255, 0)},
+    ["ammo"]  = {enabled = false, font = 3, color = Color3.fromRGB(255, 255, 255), size = 14, maxammo = false},
+    ["state"]  = {enabled = false, font = 3, color = Color3.fromRGB(255, 255, 255), size = 14, include_moving_state = true},
+    ["image"] = {enabled = false, image = image_data["angryafricankids"], transparency = 0.4},
+    ["bones"] = {enabled = false, color = Color3.fromRGB(255, 255, 255), outline = true},
+    ["radar"] = {enabled = false, position = Vector2.new(100, 100), size = 100, backgroundcolor = Color3.fromRGB(25, 25, 25), outline = true, outlinecolor = Color3.fromRGB(10, 10, 10)},
+    ["tracer"] = {enabled = false, color = Color3.fromRGB(255, 255, 255), outline = true, outlinecolor = Color3.fromRGB(0, 0, 0), position = "Top", part = "Head"},
+
+
+    images = {
+        ["angryafricankids"] = image_data["angryafricankids"],
+        ["binladen"] = image_data["binladen"],
+        ["brown_is_sus"] = image_data["brown_is_sus"],
+        ["deer"] = image_data["deer"],
+        ["gun"] = image_data["gun"],
+        ["herbert"] = image_data["herbert"],
+        ["jonesy"] = image_data["jonesy"],
+        ["troll"] = image_data["troll"]
+    }
+}
+function utility:create(name, properties)
+    local object = Instance.new(name)
+    for name, value in next, properties do
+        object[name] = value
+    end
+    return object
+end
+function utility:draw(name, properties)
+    local object = Drawing.new(name)    
+    for name, value in next, properties do
+        object[name] = value
+    end
+    return object
+end
+function utility:issprinting(player)
+    local charstats = replicatedstorage:FindFirstChild("CharStats")
+    if charstats then
+        local name = player.Name
+        local folder = charstats:FindFirstChild(name)
+        if folder then
+            local sprinting = folder:FindFirstChild("Sprinting")
+            if sprinting then
+                return sprinting.Value
+            end
+        end
+    end
+    return false
+end
+function utility:iscrouching(player)
+    local charstats = replicatedstorage:FindFirstChild("CharStats")
+    if charstats then
+        local name = player.Name
+        local folder = charstats:FindFirstChild(name)
+        if folder then
+            local crouching = folder:FindFirstChild("Crouching")
+            if crouching then
+                return crouching.Value
+            end
+        end
+    end
+    return false
+end
+function utility:isdowned(player)
+    local charstats = replicatedstorage:FindFirstChild("CharStats")
+    if charstats then
+        local name = player.Name
+        local folder = charstats:FindFirstChild(name)
+        if folder then
+            local downed = folder:FindFirstChild("Downed")
+            if downed then
+                return downed.Value
+            end
+        end
+    end
+    return false
+end
+function utility:isaiming(player)
+    local charstats = replicatedstorage:FindFirstChild("CharStats")
+    if charstats then
+        local name = player.Name
+        local folder = charstats:FindFirstChild(name)
+        if folder then
+            local repwalkspeed = folder:FindFirstChild("RepWalkSpeed")
+            if repwalkspeed then
+                return utility:iscrouching(player) and repwalkspeed.Value <= 5 or not utility:iscrouching(player) and not utility:isdowned(player) and repwalkspeed.Value > 6.8 and repwalkspeed.Value < 15.8  or false
+            end
+
+        end
+    end
+    return false
+end
+function utility:hasforcefield(player)
+
+end
+function utility:isragdolled(player)
+    local charstats = replicatedstorage:FindFirstChild("CharStats")
+    if charstats then
+        local name = player.Name
+        local folder = charstats:FindFirstChild(name)
+        if folder then
+            local folder2 = folder:FindFirstChild("RagdollTime")
+            if folder2 then
+                local sragdolled = folder2:FindFirstChild("SRagdolled")
+                if sragdolled then
+                    return sragdolled.Value
+                end
+            end
+        end
+    end
+    return false
+end
+function utility:getdistance(part)
+    local studs_distance = (camera.CFrame.Position - part.Position).Magnitude
+
+    if studs_distance >= 1e15 then
+        return "inf"
+    elseif studs_distance >= 1e12 then
+        return string.format("%.2fq", studs_distance / 1e12)
+    elseif studs_distance >= 1e9 then
+        return string.format("%.2fb", studs_distance / 1e9)
+    elseif studs_distance >= 1e6 then
+        return string.format("%.2fm", studs_distance / 1e6)
+    elseif studs_distance >= 1e3 then
+        return string.format("%.2fk", studs_distance / 1e3)
+    else
+        return string.format("%.2f", studs_distance)
+    end
+end
+
+local radarOutlineDrawing = utility:draw("Circle", {
+    Visible = library["enabled"] and library["radar"]["enabled"] and library["radar"]["outline"],
+    Position = library["radar"]["position"],
+    Radius = library["radar"]["size"] + 1,
+    Filled = false,
+    Color = library["radar"]["outlinecolor"],
+    Thickness = 2,  
+    ZIndex = 1
+})
+local radarBackground = utility:draw("Circle", {
+    Visible = library["enabled"] and library["radar"]["enabled"],
+    Position = library["radar"]["position"],
+    Radius = library["radar"]["size"],
+    Filled = true,
+    Color = library["radar"]["backgroundcolor"],
+    ZIndex = 2
+})
+local localPlayerOnRadar = utility:draw("Circle", {
+    Visible = library["enabled"] and library["radar"]["enabled"],
+    Position = library["radar"]["position"],
+    Radius = 2.5,
+    Filled = true,
+    Color = Color3.fromRGB(148, 141, 255),
+    ZIndex = 7
+})
+function utility:visiblecheck(targetPart)
+    if not localplayer.Character then return false end
+    if not targetPart or not targetPart:IsA("BasePart") then
+        warn("Invalid target part for visibility check.")
+        return false
+    end
+
+    local origin = workspace.CurrentCamera.CFrame.Position
+    local raycastParams = RaycastParams.new()
+
+    raycastParams.FilterDescendantsInstances = {localplayer.Character, targetPart.Parent, workspace.Terrain, workspace.Filter.SnowPart}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.IgnoreWater = true
+
+    local targetPosition = targetPart.Position
+    local direction = (targetPosition - origin).Unit * 500000
+
+    local raycastResult = workspace:Raycast(origin, direction, raycastParams)
+
+    if raycastResult then
+
+        return raycastResult.Instance == targetPart
+    end
+    return true -- No obstacles mean it's visible
+end
+
+function utility:drawplayer(player)
+    if drawings[player] then return end
+    if not player.Character then return end
+    if not player.Character:FindFirstChildOfClass("Humanoid") then return end
+    if player.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then return end
+    if player.Character:FindFirstChildOfClass("Humanoid").RigType ~= Enum.HumanoidRigType.R6 then return end
+    if player.Team == localplayer.Team and library.teamcheck then return end
+    if utility:isdowned(player) and library["downedcheck"] then return end
+    if player == localplayer and not library["drawlocalplayer"] then return end
+    if library["visiblecheck"]["enabled"] and not utility:visiblecheck(player.Character:FindFirstChild("Head")) then
+        return
+    end
+        --
+    local tbl = {}
+    --
+    tbl.player = player
+    tbl.character = player.Character
+    tbl.humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    tbl.username = player.Name
+    tbl.displayname = player.DisplayName
+    tbl.team = player.Team
+    tbl.isfriends = localplayer:IsFriendsWith(player.UserId)
+    --
+    tbl.boxoutline = utility:draw("Square", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3})
+    tbl.boxf = utility:draw("Square", {Visible = false, Filled = true})
+    tbl.box = utility:draw("Square", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2})
+    --
+    tbl.name = utility:draw("Text", {Visible = false, Font = 1, Size = 14, Outline = true, Color = Color3.fromRGB(255, 255, 255), OutlineColor = Color3.fromRGB(0, 0, 0), Center = true, ZIndex = 3})
+    --
+    tbl.tool = utility:draw("Text", {Visible = false, Font = 1, Size = 14, Outline = true, Color = Color3.fromRGB(255, 255, 255), OutlineColor = Color3.fromRGB(0, 0, 0)})
+    --
+    tbl.gunstate = utility:draw("Text", {Visible = false, Font = 1, Size = 14, Outline = true, Color = Color3.fromRGB(255, 255, 255), OutlineColor = Color3.fromRGB(0, 0, 0)})
+    --
+    tbl.ammo = utility:draw("Text", {Visible = false, Font = 1, Size = 14, Outline = true, Color = Color3.fromRGB(255, 255, 255), OutlineColor = Color3.fromRGB(0, 0, 0)})
+    --
+    tbl.state = utility:draw("Text", {Visible = false, Font = 1, Size = 14, Outline = true, Color = Color3.fromRGB(255, 255, 255), OutlineColor = Color3.fromRGB(0, 0, 0)})
+    --
+    tbl.distance = utility:draw("Text", {Visible = false, Font = 1, Size = 14, Outline = true, Color = Color3.fromRGB(255, 255, 255), OutlineColor = Color3.fromRGB(0, 0, 0), Center = true})
+
+    --
+    tbl.healthbar = utility:draw("Line", {Visible = false, Thickness = 3, Color = Color3.fromRGB(0, 255, 0), ZIndex = 2})
+    tbl.healthbaro = utility:draw("Line", {Visible = false, Thickness = 5, Color = Color3.fromRGB(0, 0, 0)})
+    --
+    tbl.radarDot = utility:draw("Circle", {Visible = false, Radius = 2, Filled = true, Color = Color3.fromRGB(255, 0, 0), ZIndex = 3})
+    --
+    --tbl.image = utility:draw("Image", {Visible = false, Data = library["image"]["image"], ZIndex = 3})
+    --
+    tbl.bonelines = {
+        ["head"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["heado"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["neck"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["necko"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["rightcollar"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["rightcollaro"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["rightshoulder"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["rightshouldero"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["righthand"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["righthando"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["leftcollar"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["leftcollaro"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["leftshoulder"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["leftshouldero"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["lefthand"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["lefthando"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["waist"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["waisto"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+    
+        ["leftwaist"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["leftwaisto"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["leftfoot"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["leftfooto"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["rightwaist"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["rightwaisto"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["rightfoot"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["rightfooto"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+
+        ["penis"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["peniso"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(0, 0, 0), Thickness = 3.5}),
+        
+    }
+    tbl.threedboxlines = {
+        ["frontleft"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["frontright"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["bottomfront"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["topfront"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["backleft"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["backright"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["bottomback"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["topback"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["leftvertical"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["rightvertical"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["frontvertical"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+        ["backvertical"] = utility:draw("Line", {Visible = false, Color = Color3.fromRGB(255, 255, 255), ZIndex = 2}),
+    }
+    tbl.tracero = utility:draw("Line", {Visible = false, Thickness = 3.5})
+    tbl.tracer = utility:draw("Line", {Visible = false, ZIndex = 2})
+    
+    drawings[player] = tbl
+end
+function utility:removeplayer(player)
+    local tbl = drawings[player]
+    if tbl then
+        drawings[player] = nil
+        
+        for index, object in next, tbl do
+            if typeof(object) == "table" then
+                for _, line in next, object do
+                    if typeof(line) == "DrawingObject" then
+                        line.Visible = false
+                        line:Remove()
+                    end
+                end
+            elseif typeof(object) == "DrawingObject" then
+                object.Visible = false
+                object:Remove()
+            end
+        end
+    end
+end
+
+
+
+-- Calculate max distance automatically (e.g., 10 times the radar size in studs)
+
+-- Function to convert world position to radar position
+function utility:worldToRadarPosition(worldPos)
+    local radarPosition = library["radar"]["position"] -- Radar center
+    local radarSize = library["radar"]["size"] -- Radar radius in pixels
+    local maxRadarDistance = radarSize * 10 -- Max world distance before clamping
+
+    local localPlayerCharacter = localplayer.Character
+    if not localPlayerCharacter or not localPlayerCharacter:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+
+    local localHRP = localPlayerCharacter.HumanoidRootPart
+    local localPos = localHRP.Position
+    local camCFrame = camera.CFrame -- Camera orientation
+
+    -- Get displacement vector in world space (ignore Y for top-down radar)
+    local delta = (worldPos - localPos) * Vector3.new(1, 0, 1)
+    local distance = delta.Magnitude
+
+    -- Clamp the distance within the radar range
+    if distance > maxRadarDistance then
+        delta = delta.Unit * maxRadarDistance
+    end
+
+    -- Calculate forward and right vectors from camera
+    local forward = camCFrame.LookVector * Vector3.new(1, 0, 1) -- Flatten Y-axis
+    forward = forward.Unit
+    local right = Vector3.new(-forward.Z, 0, forward.X) -- Corrected right vector
+
+    -- Convert world position to radar space
+    local forwardDot = delta:Dot(forward)  -- Forward/Backward axis projection
+    local rightDot = delta:Dot(right)      -- Left/Right axis projection
+
+    -- Normalize position within radar
+    local radarX = (rightDot / maxRadarDistance) * radarSize -- **Fixed Left/Right**
+    local radarY = (-forwardDot / maxRadarDistance) * radarSize -- **Fixed Front/Back**
+
+    -- Map to radar screen coordinates, centered at radarPosition
+    local x = radarPosition.X + radarX
+    local y = radarPosition.Y + radarY
+
+    return Vector2.new(x, y)
+end
+
+
+calculate_offset = function(size: number, str: string) -- thanks dementia enjoyer 🙂
+    return #str * size * 0.55 / 2
+ end
+local healthbar_tick = tick()
+connections[1] = runservice.RenderStepped:Connect(function()
+    for _, player in next, game.Players:GetPlayers() do
+        if player == localplayer then continue end
+        utility:drawplayer(player)
+    end
+    for _, drawing in next, drawings do
+        local player = drawing.player
+        if utility:isdowned(player) and library["downedcheck"] then utility:removeplayer(player) continue end
+        local character     = drawing.character
+        if not character then utility:removeplayer(player) continue end
+        if not character:FindFirstChild("Head") then utility:removeplayer(player) continue end
+        local humanoid      = drawing.humanoid
+        if humanoid.RigType ~= Enum.HumanoidRigType.R6 then utility:removeplayer(player) end
+        local username      = drawing.username
+        local displayname   = drawing.displayname
+        local team          = drawing.team
+        local isfriends     = drawing.isfriends
+        if not player or not character or not humanoid or humanoid.Health <= 0 then utility:removeplayer(player) end
+        if team == localplayer.Team and library.teamcheck then utility:removeplayer(player) continue end
+        local head = character:FindFirstChild("Head")
+        if not utility:visiblecheck(head) and library["visiblecheck"] then utility:removeplayer(player) continue end
+        local humanoidrootpart = character:FindFirstChild("HumanoidRootPart")
+        local headwts, onscreen = wtvp(camera, head.Position + Vector3.new(0, 1, 0))
+        local boxheadwts, _ = wtvp(camera, head.Position + Vector3.new(0, 2.2, 0))
+        local hrpwts, _ = wtvp(camera, humanoidrootpart.Position)
+        local legwts, _ = wtvp(camera, humanoidrootpart.Position - Vector3.new(0, 2, 0))
+        local boneattachments = {
+            ["head"] = head.FaceCenterAttachment.WorldCFrame.Position,
+            ["neck"] = character:FindFirstChild("Torso").NeckAttachment.WorldCFrame.Position,
+            ["rightcollar"] = character:FindFirstChild("Torso").RightCollarAttachment.WorldCFrame.Position,
+            ["rightshoulder"] = character:FindFirstChild("Right Arm").RightShoulderAttachment.WorldCFrame.Position,
+            ["righthand"] = character:FindFirstChild("Right Arm").RightGripAttachment.WorldCFrame.Position,
+            ["leftcollar"] = character:FindFirstChild("Torso").LeftCollarAttachment.WorldCFrame.Position,
+            ["leftshoulder"] = character:FindFirstChild("Left Arm").LeftShoulderAttachment.WorldCFrame.Position,
+            ["lefthand"] = character:FindFirstChild("Left Arm").LeftGripAttachment.WorldCFrame.Position,
+            ["waist"] = character:FindFirstChild("Torso").WaistCenterAttachment.WorldCFrame.Position,
+            ["leftwaist"] = (character:FindFirstChild("Left Leg").CFrame * CFrame.new(0, character:FindFirstChild("Left Leg").Size.Y / 2, 0)).Position * Vector3.new(1, 0, 1) + Vector3.new(0, character:FindFirstChild("Torso").WaistCenterAttachment.WorldPosition.Y, 0), -- Correct Y
+            ["rightwaist"] = (character:FindFirstChild("Right Leg").CFrame * CFrame.new(0, character:FindFirstChild("Right Leg").Size.Y / 2, 0)).Position * Vector3.new(1, 0, 1) + Vector3.new(0, character:FindFirstChild("Torso").WaistCenterAttachment.WorldPosition.Y, 0), -- Correct Y
+
+            
+
+            ["leftfoot"] = character:FindFirstChild("Left Leg").LeftFootAttachment.WorldCFrame.Position,
+
+            ["rightfoot"] = character:FindFirstChild("Right Leg").RightFootAttachment.WorldCFrame.Position,
+            ["penis"] = character:FindFirstChild("Torso").WaistFrontAttachment.WorldCFrame.Position,
+            
+
+        }
+        
+        -- BOX ESP
+        --[[
+            setrenderproperty(drawing.box, "Size", Vector2.new(2222 / math.floor(wts.Z), math.floor(boxheadwts.Y) - math.floor(boxlegwts.Y))) 
+            setrenderproperty(drawing.box, "Position", Vector2.new(math.floor(wts.X) - math.floor(drawing.box.Size.X) / 2, math.floor(wts.Y) - math.floor(drawing.box.Size.Y) / 1.6))
+
+        ]]
+            if library["boxes"]["boxtype"] == "normal" then
+                for _, v in next, drawing.threedboxlines do
+                    v.Visible = false
+                end
+            end
+            local scalefactor = 70 / camera.FieldOfView
+            if library["boxes"]["boxtype"] == "normal" then
+                drawing.box.Visible = onscreen and library["enabled"] and library["boxes"]["enabled"]
+            else
+                drawing.box.Visible = false
+            end
+            drawing.box.Size = Vector2.new(
+                (2600 / math.floor(hrpwts.Z)) * (scalefactor ^ 1.5),  -- Width scaled
+                (math.floor(boxheadwts.Y) - math.floor(legwts.Y)) -- Height scaled
+            )        drawing.box.Position = Vector2.new(math.floor(hrpwts.X) - math.floor(drawing.box.Size.X) / 2, math.floor(hrpwts.Y) - math.floor(drawing.box.Size.Y) / 1.75)
+            drawing.box.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["boxes"]["color"]
+    
+            drawing.boxoutline.Visible = drawing.box.Visible
+            drawing.boxoutline.Position = drawing.box.Position
+            drawing.boxoutline.Size = drawing.box.Size  
+
+            drawing.boxf.Visible = drawing.box.Visible and library["boxes"]["filled"]
+            drawing.boxf.Position = drawing.box.Position
+            drawing.boxf.Size = drawing.box.Size
+            drawing.boxf.Color = library["boxes"]["filledcolor"]
+            drawing.boxf.Transparency = library["boxes"]["filledtransparency"]
+            local bottomvec3 = humanoidrootpart.Position - Vector3.new(0, 1.5, 0)
+            local frontleft
+        
+            -- Define the 3D box lines (8 edges of a cube)
+            local threedboxlines = drawing.threedboxlines
+        
+            -- Front face
+            -- Front face
+
+
+        
+            -- Apply team or custom colors if enabled
+            if library["useteamcolors"] and team and team.TeamColor then
+                for _, line in pairs(drawing.threedboxlines) do
+                    line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or team.TeamColor.Color
+                end
+            elseif library["customcolors"]["friendcolor"]["enabled"] and isfriends then
+                for _, line in pairs(drawing.threedboxlines) do
+                    line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["customcolors"]["friendcolor"]["color"]
+                end
+            elseif library["customcolors"]["friendlycolor"]["enabled"] and team and team == localplayer.Team then
+                for _, line in pairs(drawing.threedboxlines) do
+                    line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["customcolors"]["friendlycolor"]["color"]
+                end
+            elseif library["customcolors"]["enemycolor"]["enabled"] and (team ~= localplayer.Team or not team) then
+                for _, line in pairs(drawing.threedboxlines) do
+                    line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["customcolors"]["enemycolor"]["color"]
+                end
+            end
+        -- if drawing.image.Data ~= library["image"]["image"] then
+        --     drawing.image.Data = library["image"]["image"]
+        -- end
+
+        
+        if library["useteamcolors"] and team and team.TeamColor then
+            drawing.box.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or team.TeamColor.Color
+        elseif library["customcolors"]["friendcolor"]["enabled"] and isfriends then
+            drawing.box.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["customcolors"]["friendcolor"]["color"]
+        elseif library["customcolors"]["friendlycolor"]["enabled"] and team and team == localplayer.Team then
+            drawing.box.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["customcolors"]["friendlycolor"]["color"]
+        elseif library["customcolors"]["enemycolor"]["enabled"] and (team ~= localplayer.Team or not team) then
+            drawing.box.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["customcolors"]["enemycolor"]["color"]
+        end
+        --
+        --
+        -- IMAGE
+        -- drawing.image.Visible = onscreen and library["enabled"] and library["image"]["enabled"]
+        -- drawing.image.Position = drawing.box.Position
+        -- drawing.image.Size = drawing.box.Size
+        -- drawing.image.Transparency = library["image"]["transparency"]
+        --
+        -- 
+        -- HEALTH BAR
+        do
+            if not drawing.lastHealth then drawing.lastHealth = humanoid.Health end
+            drawing.healthbar.Visible = onscreen and library["enabled"] and library["healthbar"]["enabled"]
+            drawing.healthbaro.Visible = drawing.healthbar.Visible
+
+        
+            local health, maxhealth = humanoid.Health, humanoid.MaxHealth
+            local fromX = drawing.box.Position.X - 5
+            local fromY = drawing.box.Position.Y -- Start from the bottom of the box
+            local from = Vector2.new(math.floor(fromX), math.floor(fromY))
+            local targetToY = math.floor(fromY + (drawing.box.Size.Y * math.clamp(health / maxhealth, 0, 1)))
+        
+            if drawing.healthbar.To.Y == 0 then
+                drawing.healthbar.To = Vector2.new(from.X, targetToY)
+            end
+            if library["healthbar"]["autosetcolor"] then
+                if health > maxhealth / 2 then
+                    drawing.healthbar.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["healthbar"]["healthycolor"]
+                elseif health < maxhealth / 2 and health > maxhealth / 3 then
+                    drawing.healthbar.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["healthbar"]["damagedcolor"]
+                else
+                    drawing.healthbar.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["healthbar"]["lowcolor"]
+                end
+            else
+                drawing.healthbar.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["healthbar"]["color"]
+            end
+            if health ~= drawing.lastHealth then
+                if library["healthbar"]["tween"] then
+                    if tick() - healthbar_tick >= 0.01 then
+                        healthbar_tick = tick()
+                        -- Fix tweening direction
+                        drawing.healthbar.To = Vector2.new(from.X, drawing.healthbar.To.Y + (targetToY - drawing.healthbar.To.Y) * 0.15)
+                    end
+                else
+                    drawing.healthbar.To = Vector2.new(from.X, targetToY)
+                end
+            else
+                drawing.healthbar.To = Vector2.new(from.X, targetToY)
+            end
+        
+            -- Ensure bottom-to-top rendering
+            drawing.healthbar.From = from
+            drawing.healthbaro.From = from + Vector2.new(0, 2)
+            drawing.healthbaro.To = Vector2.new(from.X, drawing.box.Position.Y + drawing.box.Size.Y) - Vector2.new(0, 2)
+        
+            if math.abs(drawing.healthbar.To.Y - targetToY) < 1 then
+                drawing.lastHealth = health
+            end
+        end
+        
+        
+
+
+        
+        
+        
+        
+        --
+        --
+        -- NAME
+        do
+            local fontsize = library["names"]["size"]
+            drawing.name.Text = library["names"]["displayname"] and displayname or username
+            drawing.name.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["names"]["color"]
+            drawing.name.Size = fontsize
+            drawing.name.Visible = onscreen and library["names"]["enabled"] and library["enabled"]
+            drawing.name.Font = library["names"]["font"]
+            drawing.name.Position = Vector2.new(headwts.X, drawing.box.Position.Y + drawing.box.Size.Y - fontsize - (fontsize / 2))
+        end
+        --
+        --
+        -- TOOL
+        do
+            local fontsize = library["gun"]["size"]
+            drawing.tool.Text = character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool").Name or "Empty"
+            drawing.tool.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["gun"]["color"]
+            drawing.tool.Size = fontsize
+            drawing.tool.Visible = onscreen and library["gun"]["enabled"] and library["enabled"]
+            drawing.tool.Font = library["gun"]["font"]
+            drawing.tool.Position = Vector2.new(drawing.box.Position.X + drawing.box.Size.X + 6, drawing.box.Position.Y + drawing.box.Size.Y + fontsize - fontsize)
+        end
+        --
+        --
+        -- GUN STATE
+        do
+            local fontsize = library["gunstate"]["size"]
+            local position
+            local color = library["gunstate"]["color"]
+            local text = ""
+            local aiming = false
+            local tool = character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool")
+            if tool then
+                local values = character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):FindFirstChild("Values")
+                if values then
+                    local aiming = utility:isaiming(player)
+                    local reloading = character:FindFirstChildOfClass("Tool") and character:FindFirstChildOfClass("Tool"):FindFirstChild("Values") and character:FindFirstChildOfClass("Tool"):FindFirstChild("Values"):FindFirstChild("Reloading")
+                    if reloading then
+                        if aiming then
+                            text = "Aiming"
+                        elseif reloading.Value then
+                            text = "Reloading"
+                        elseif not aiming or reloading.Value then
+                            text = "Gun Idle"
+                        end
+                    end
+                end
+            end
+            if drawing.tool.Visible then
+                position = drawing.tool.Position + Vector2.new(0, fontsize)
+            else
+                position = Vector2.new(drawing.box.Position.X + drawing.box.Size.X + 6, drawing.box.Position.Y + drawing.box.Size.Y + fontsize - fontsize)
+            end
+            drawing.gunstate.Visible = onscreen and library["gunstate"]["enabled"] and library["enabled"]
+            drawing.gunstate.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or color
+            drawing.gunstate.Position = position
+            drawing.gunstate.Size = fontsize
+            drawing.gunstate.Font = library["gunstate"]["font"]
+            drawing.gunstate.Text = text
+        end
+        --
+        --
+        -- AMMO
+        do
+            local fontsize = library["ammo"]["size"]
+            local tool = character:FindFirstChildOfClass("Tool")
+            local values = tool and tool:FindFirstChild("Values")
+        
+            if tool and values then
+                local server_ammo = values:FindFirstChild("SERVER_Ammo")
+                if server_ammo then
+                    local value = tostring(server_ammo.Value)
+                    local max_value = tostring(server_ammo.MaxValue)
+                    drawing.ammo.Text = not library["ammo"]["maxammo"] and value or value.." / "..max_value
+                else
+                    drawing.ammo.Text = ""
+                end
+            else
+                drawing.ammo.Text = ""
+            end
+        
+            drawing.ammo.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["ammo"]["color"]
+            drawing.ammo.Size = fontsize
+            drawing.ammo.Visible = onscreen and library["ammo"]["enabled"] and library["enabled"] and tool ~= nil and drawing.ammo.Text ~= ""
+            drawing.ammo.Font = library["ammo"]["font"]
+        
+            if drawing.gunstate.Visible then
+                drawing.ammo.Position = Vector2.new(drawing.gunstate.Position.X, drawing.gunstate.Position.Y + fontsize)
+            elseif drawing.tool.Visible then
+                drawing.ammo.Position = Vector2.new(drawing.tool.Position.X, drawing.tool.Position.Y + fontsize)
+            else
+                drawing.ammo.Position = Vector2.new(drawing.box.Position.X + drawing.box.Size.X + 6, drawing.box.Position.Y + drawing.box.Size.Y + fontsize - fontsize)
+            end
+        end
+        -- 
+        --
+        -- STATE
+        do
+            local fontsize = library["state"]["size"]
+            local ismoving = humanoid.MoveDirection ~= Vector3.new(0, 0, 0)
+            local isrunning = ismoving and utility:issprinting(player)
+            local crouching = utility:iscrouching(player)
+            local sneaking = crouching and ismoving
+            local downed = utility:isdowned(player)
+            local ragdolled = utility:isragdolled(player)
+            local include_moving_state = library["state"]["include_moving_state"]
+            local position
+            local text
+            if drawing.ammo.Visible then
+                position = Vector2.new(drawing.ammo.Position.X, drawing.ammo.Position.Y + fontsize)
+            elseif drawing.tool.Visible then
+                position = Vector2.new(drawing.tool.Position.X, drawing.tool.Position.Y + fontsize)
+            else
+                position = Vector2.new(drawing.box.Position.X + drawing.box.Size.X + 6, drawing.box.Position.Y + drawing.box.Size.Y + fontsize - fontsize)
+            end
+            text = ragdolled and "Ragdolled" or ismoving and not isrunning and not crouching and "Walking" or ismoving and isrunning and "Running" or crouching and ismoving and "Sneaking" or crouching and "Crouching" or downed and ismoving and "Crawling" or downed and "Downed" or "Idle"
+            
+            drawing.state.Visible = onscreen and library["state"]["enabled"] and library["enabled"]
+            drawing.state.Position = position
+            drawing.state.Text = text
+            drawing.state.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["state"]["color"]
+            drawing.state.Size = library["state"]["size"]
+            drawing.state.Font = library["state"]["font"]
+        end
+        --
+        --
+        -- DISTANCE
+        do
+            local fontsize = library["distance"]["size"]
+            drawing.distance.Text = utility:getdistance(head)
+            drawing.distance.Size = fontsize
+            drawing.distance.Visible = onscreen and library["distance"]["enabled"] and library["enabled"]
+            drawing.distance.Font = library["distance"]["font"]
+            drawing.distance.Position = Vector2.new(drawing.box.Position.X + drawing.box.Size.X + 6, drawing.box.Position.Y - 6)
+            drawing.distance.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["distance"]["color"]
+        end
+        --
+        --
+        -- BONE
+        do
+            local headwts, headonscreen = wtvp(camera, boneattachments["head"])
+            local neckwts, neckonscreen = wtvp(camera, boneattachments["neck"])
+            local rightcollarwts, rightcollaronscreen = wtvp(camera, boneattachments["rightcollar"])
+            local rightshoulderwts, rightshoulderonscreen = wtvp(camera, boneattachments["rightshoulder"])
+            local righthandwts, righthandonscreen = wtvp(camera, boneattachments["righthand"])
+            local leftcollarwts, leftcollaronscreen = wtvp(camera, boneattachments["leftcollar"])
+            local leftshoulderwts, leftshoulderonscreen = wtvp(camera, boneattachments["leftshoulder"])
+            local lefthandwts, lefthandonscreen = wtvp(camera, boneattachments["lefthand"])
+            local waistwts, waistonscreen = wtvp(camera, boneattachments["waist"])
+            local leftwaistwts, leftwaistonscreen = wtvp(camera, boneattachments["leftwaist"])
+            local leftfootwts, leftfootonscreen = wtvp(camera, boneattachments["leftfoot"])
+            local rightwaistwts, rightwaistonscreen = wtvp(camera, boneattachments["rightwaist"])
+            local rightfootwts, rightfootonscreen = wtvp(camera, boneattachments["rightfoot"])
+        
+            local bonelines = drawing.bonelines
+        
+            local function setLine(line, outline, from, to, onscreen)
+                if line then
+                    line.From = Vector2.new(from.X, from.Y)
+                    line.To = Vector2.new(to.X, to.Y)
+                    line.Visible = onscreen and library["bones"]["enabled"] and library["enabled"]
+                    line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["bones"]["color"]
+            
+                    if library["bones"]["outline"] then
+                        outline.From = Vector2.new(from.X, from.Y)
+                        outline.To = Vector2.new(to.X, to.Y)
+                        outline.Visible = onscreen and library["bones"]["outline"] and library["bones"]["enabled"]
+                    else
+                        outline.Visible = false
+                    end
+                end
+            end
+        
+            setLine(bonelines.head, bonelines.heado, headwts, neckwts, headonscreen)
+            setLine(bonelines.neck, bonelines.necko, neckwts, waistwts, neckonscreen)
+            setLine(bonelines.rightcollar, bonelines.rightcollaro, neckwts, rightcollarwts, rightcollaronscreen)
+            setLine(bonelines.rightshoulder, bonelines.rightshouldero, rightcollarwts, rightshoulderwts, rightshoulderonscreen)
+            setLine(bonelines.righthand, bonelines.righthando, rightshoulderwts, righthandwts, headonscreen)
+            setLine(bonelines.leftcollar, bonelines.leftcollaro, neckwts, leftcollarwts, headonscreen)
+            setLine(bonelines.leftshoulder, bonelines.leftshouldero, leftcollarwts, leftshoulderwts, headonscreen)
+            setLine(bonelines.lefthand, bonelines.lefthando, leftshoulderwts, lefthandwts, headonscreen)
+            setLine(bonelines.waist, bonelines.waisto, waistwts, leftwaistwts, waistonscreen)
+            setLine(bonelines.leftwaist, bonelines.leftwaisto, waistwts, leftwaistwts, headonscreen) -- drawing, from, to, oonscreen
+            setLine(bonelines.leftfoot, bonelines.leftfooto, bonelines.leftwaist.To, leftfootwts, headonscreen)
+            setLine(bonelines.rightwaist, bonelines.rightwaisto, waistwts, rightwaistwts, headonscreen)
+            setLine(bonelines.rightfoot, bonelines.rightfooto, bonelines.rightwaist.To, rightfootwts, headonscreen)
+        end
+        -- 
+        --
+        -- TRACER
+        do
+            local from
+            if library["tracer"]["position"] == "Top" then
+                from = Vector2.new(1920 / 2, 0)
+            elseif library["tracer"]["position"] == "Center" or library["tracer"]["position"] == "Middle" then
+                from = Vector2.new(1920 / 2, 1080 / 2)
+            elseif library["tracer"]["position"] == "Bottom" then
+                from = Vector2.new(1920 / 2, 1080)
+            elseif library["tracer"]["position"] == "Mouse" then
+                from = Vector2.new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+            end
+            drawing.tracer.From = from
+            local targetwts, _ = wtvp(camera, character:FindFirstChild(library["tracer"]["part"]).Position)
+            drawing.tracer.To = Vector2.new(targetwts.X, targetwts.Y)
+            drawing.tracer.Visible = onscreen and library["tracer"]["enabled"] and library["enabled"]
+            drawing.tracer.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["tracer"]["color"]
+
+            drawing.tracero.From = from
+            drawing.tracero.To = drawing.tracer.To
+            drawing.tracero.Visible = drawing.tracer.Visible and library["tracer"]["outline"]
+            drawing.tracero.Color = library["tracer"]["outlinecolor"]
+        end
+        -- 
+        --
+        -- RADAR
+        do
+            local radarPos = utility:worldToRadarPosition(humanoidrootpart.Position)
+            localPlayerOnRadar.Visible = library["enabled"] and library["radar"]["enabled"]
+            localPlayerOnRadar.Position = radarBackground.Position
+            local color = Color3.fromRGB(255, 0, 0) -- Default
+            local team = player.Team
+            local isFriends = localplayer:IsFriendsWith(player.UserId)
+
+            if library["useteamcolors"] and team and team.TeamColor then
+                color = team.TeamColor.Color
+            elseif library["customcolors"]["friendcolor"]["enabled"] and isFriends then
+                color = library["customcolors"]["friendcolor"]["color"]
+            elseif library["customcolors"]["friendlycolor"]["enabled"] and team and team == localplayer.Team then
+                color = library["customcolors"]["friendlycolor"]["color"]
+            elseif library["customcolors"]["enemycolor"]["enabled"] and (team ~= localplayer.Team or not team) then
+                color = library["customcolors"]["enemycolor"]["color"]
+            end
+
+            drawing.radarDot.Position = radarPos
+            drawing.radarDot.Color = color
+            drawing.radarDot.Visible = library["enabled"] and library["radar"]["enabled"]
+            radarBackground.Visible = library["enabled"] and library["radar"]["enabled"]
+            radarBackground.Position = library["radar"]["position"]
+            radarBackground.Radius = library["radar"]["size"]
+            radarBackground.Color = library["radar"]["backgroundcolor"]
+            radarOutlineDrawing.Visible = radarBackground.Visible and library["radar"]["outline"]
+            radarOutlineDrawing.Position = radarBackground.Position
+            radarOutlineDrawing.Radius = radarBackground.Radius + 1
+            radarOutlineDrawing.Color = library["radar"]["outlinecolor"]
+
+
+        end
+        
+
+
+
+
+    end
+end)
+function utility:unload()
+    for _, con in next, connections do
+        con:Disconnect()
+    end 
+    for _, player in next, game.Players:GetPlayers() do
+        utility:removeplayer(player)
+    end
+end
+game.Players.PlayerRemoving:Connect(function(player)
+    utility:removeplayer(player)
+end)
+
+-- game.Players.PlayerAdded:Connect(function(player)
+--     utility:drawplayer(player)
+--     player.CharacterRemoving:Connect(function()
+--         utility:removeplayer(player)
+--     end)
+-- end)
+-- for _, player in next, game.Players:GetPlayers() do
+--     if player == localplayer then continue end
+--     utility:drawplayer(player)
+--     player.CharacterRemoving:Connect(function()
+--         utility:removeplayer(player)
+--     end)
+-- end
+
+return library, utility
