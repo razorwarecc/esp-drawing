@@ -453,21 +453,20 @@ connections[1] = runservice.RenderStepped:Connect(function()
             ["head"] = head.FaceCenterAttachment.WorldCFrame.Position,
             ["neck"] = character:FindFirstChild("Torso").NeckAttachment.WorldCFrame.Position,
             ["rightcollar"] = character:FindFirstChild("Torso").RightCollarAttachment.WorldCFrame.Position,
-            ["rightshoulder"] = character:FindFirstChild("Right Arm").RightShoulderAttachment.WorldCFrame.Position,
-            ["righthand"] = character:FindFirstChild("Right Arm").RightGripAttachment.WorldCFrame.Position,
+            ["rightshoulder"] = character:FindFirstChild("Right Arm") and character:FindFirstChild("Right Arm").RightShoulderAttachment.WorldCFrame.Position or nil,
+            ["righthand"] = character:FindFirstChild("Right Arm") and character:FindFirstChild("Right Arm").RightGripAttachment.WorldCFrame.Position or nil,
             ["leftcollar"] = character:FindFirstChild("Torso").LeftCollarAttachment.WorldCFrame.Position,
-            ["leftshoulder"] = character:FindFirstChild("Left Arm").LeftShoulderAttachment.WorldCFrame.Position,
-            ["lefthand"] = character:FindFirstChild("Left Arm").LeftGripAttachment.WorldCFrame.Position,
+            ["leftshoulder"] = character:FindFirstChild("Left Arm") and character:FindFirstChild("Left Arm").LeftShoulderAttachment.WorldCFrame.Position or nil,
+            ["lefthand"] = character:FindFirstChild("Left Arm") and character:FindFirstChild("Left Arm").LeftGripAttachment.WorldCFrame.Position or nil,
             ["waist"] = character:FindFirstChild("Torso").WaistCenterAttachment.WorldCFrame.Position,
-            ["leftwaist"] = (character:FindFirstChild("Left Leg").CFrame * CFrame.new(0, character:FindFirstChild("Left Leg").Size.Y / 2, 0)).Position * Vector3.new(1, 0, 1) + Vector3.new(0, character:FindFirstChild("Torso").WaistCenterAttachment.WorldPosition.Y, 0), -- Correct Y
-            ["rightwaist"] = (character:FindFirstChild("Right Leg").CFrame * CFrame.new(0, character:FindFirstChild("Right Leg").Size.Y / 2, 0)).Position * Vector3.new(1, 0, 1) + Vector3.new(0, character:FindFirstChild("Torso").WaistCenterAttachment.WorldPosition.Y, 0), -- Correct Y
+            ["leftwaist"] = character:FindFirstChild("Left Leg") and (character:FindFirstChild("Left Leg").CFrame * CFrame.new(0, character:FindFirstChild("Left Leg").Size.Y / 2, 0)).Position * Vector3.new(1, 0, 1) + Vector3.new(0, character:FindFirstChild("Torso").WaistCenterAttachment.WorldPosition.Y, 0) or nil, -- Correct Y
+            ["rightwaist"] = character:FindFirstChild("Right Leg") and (character:FindFirstChild("Right Leg").CFrame * CFrame.new(0, character:FindFirstChild("Right Leg").Size.Y / 2, 0)).Position * Vector3.new(1, 0, 1) + Vector3.new(0, character:FindFirstChild("Torso").WaistCenterAttachment.WorldPosition.Y, 0) or nil, -- Correct Y
 
-            
 
-            ["leftfoot"] = character:FindFirstChild("Left Leg").LeftFootAttachment.WorldCFrame.Position,
+            ["leftfoot"] = character:FindFirstChild("Right Leg") and character:FindFirstChild("Left Leg").LeftFootAttachment.WorldCFrame.Position or nil,
 
-            ["rightfoot"] = character:FindFirstChild("Right Leg").RightFootAttachment.WorldCFrame.Position,
-            ["penis"] = character:FindFirstChild("Torso").WaistFrontAttachment.WorldCFrame.Position,
+            ["rightfoot"] = character:FindFirstChild("Right Leg") and character:FindFirstChild("Right Leg").RightFootAttachment.WorldCFrame.Position or nil,
+            ["penis"] = character:FindFirstChild("Right Leg") and character:FindFirstChild("Torso").WaistFrontAttachment.WorldCFrame.Position or nil,
             
 
         }
@@ -756,34 +755,46 @@ connections[1] = runservice.RenderStepped:Connect(function()
         --
         -- BONE
         do
-            local headwts, headonscreen = wtvp(camera, boneattachments["head"])
-            local neckwts, neckonscreen = wtvp(camera, boneattachments["neck"])
-            local rightcollarwts, rightcollaronscreen = wtvp(camera, boneattachments["rightcollar"])
-            local rightshoulderwts, rightshoulderonscreen = wtvp(camera, boneattachments["rightshoulder"])
-            local righthandwts, righthandonscreen = wtvp(camera, boneattachments["righthand"])
-            local leftcollarwts, leftcollaronscreen = wtvp(camera, boneattachments["leftcollar"])
-            local leftshoulderwts, leftshoulderonscreen = wtvp(camera, boneattachments["leftshoulder"])
-            local lefthandwts, lefthandonscreen = wtvp(camera, boneattachments["lefthand"])
-            local waistwts, waistonscreen = wtvp(camera, boneattachments["waist"])
-            local leftwaistwts, leftwaistonscreen = wtvp(camera, boneattachments["leftwaist"])
-            local leftfootwts, leftfootonscreen = wtvp(camera, boneattachments["leftfoot"])
-            local rightwaistwts, rightwaistonscreen = wtvp(camera, boneattachments["rightwaist"])
-            local rightfootwts, rightfootonscreen = wtvp(camera, boneattachments["rightfoot"])
+            local function checkBone(pos, onscreen)
+                if not pos then
+                    return nil, false
+                end
+                return pos, onscreen
+            end
+        
+            local headwts, headonscreen = checkBone(wtvp(camera, boneattachments["head"]))
+            local neckwts, neckonscreen = checkBone(wtvp(camera, boneattachments["neck"]))
+            local rightcollarwts, rightcollaronscreen = checkBone(wtvp(camera, boneattachments["rightcollar"]))
+            local rightshoulderwts, rightshoulderonscreen = checkBone(wtvp(camera, boneattachments["rightshoulder"]))
+            local righthandwts, righthandonscreen = checkBone(wtvp(camera, boneattachments["righthand"]))
+            local leftcollarwts, leftcollaronscreen = checkBone(wtvp(camera, boneattachments["leftcollar"]))
+            local leftshoulderwts, leftshoulderonscreen = checkBone(wtvp(camera, boneattachments["leftshoulder"]))
+            local lefthandwts, lefthandonscreen = checkBone(wtvp(camera, boneattachments["lefthand"]))
+            local waistwts, waistonscreen = checkBone(wtvp(camera, boneattachments["waist"]))
+            local leftwaistwts, leftwaistonscreen = checkBone(wtvp(camera, boneattachments["leftwaist"]))
+            local leftfootwts, leftfootonscreen = checkBone(wtvp(camera, boneattachments["leftfoot"]))
+            local rightwaistwts, rightwaistonscreen = checkBone(wtvp(camera, boneattachments["rightwaist"]))
+            local rightfootwts, rightfootonscreen = checkBone(wtvp(camera, boneattachments["rightfoot"]))
         
             local bonelines = drawing.bonelines
         
             local function setLine(line, outline, from, to, onscreen)
                 if line then
-                    line.From = Vector2.new(from.X, from.Y)
-                    line.To = Vector2.new(to.X, to.Y)
-                    line.Visible = onscreen and library["bones"]["enabled"] and library["enabled"]
-                    line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["bones"]["color"]
-            
-                    if library["bones"]["outline"] then
-                        outline.From = Vector2.new(from.X, from.Y)
-                        outline.To = Vector2.new(to.X, to.Y)
-                        outline.Visible = onscreen and library["bones"]["outline"] and library["bones"]["enabled"]
+                    if from and to then
+                        line.From = Vector2.new(from.X, from.Y)
+                        line.To = Vector2.new(to.X, to.Y)
+                        line.Visible = onscreen and library["bones"]["enabled"] and library["enabled"]
+                        line.Color = library["target"]["enabled"] and library["target"]["player"] == player and library["target"]["color"] or library["bones"]["color"]
+        
+                        if library["bones"]["outline"] then
+                            outline.From = Vector2.new(from.X, from.Y)
+                            outline.To = Vector2.new(to.X, to.Y)
+                            outline.Visible = onscreen and library["bones"]["outline"] and library["bones"]["enabled"]
+                        else
+                            outline.Visible = false
+                        end
                     else
+                        line.Visible = false
                         outline.Visible = false
                     end
                 end
@@ -793,15 +804,15 @@ connections[1] = runservice.RenderStepped:Connect(function()
             setLine(bonelines.neck, bonelines.necko, neckwts, waistwts, neckonscreen)
             setLine(bonelines.rightcollar, bonelines.rightcollaro, neckwts, rightcollarwts, rightcollaronscreen)
             setLine(bonelines.rightshoulder, bonelines.rightshouldero, rightcollarwts, rightshoulderwts, rightshoulderonscreen)
-            setLine(bonelines.righthand, bonelines.righthando, rightshoulderwts, righthandwts, headonscreen)
-            setLine(bonelines.leftcollar, bonelines.leftcollaro, neckwts, leftcollarwts, headonscreen)
-            setLine(bonelines.leftshoulder, bonelines.leftshouldero, leftcollarwts, leftshoulderwts, headonscreen)
-            setLine(bonelines.lefthand, bonelines.lefthando, leftshoulderwts, lefthandwts, headonscreen)
+            setLine(bonelines.righthand, bonelines.righthando, rightshoulderwts, righthandwts, righthandonscreen)
+            setLine(bonelines.leftcollar, bonelines.leftcollaro, neckwts, leftcollarwts, leftcollaronscreen)
+            setLine(bonelines.leftshoulder, bonelines.leftshouldero, leftcollarwts, leftshoulderwts, leftshoulderonscreen)
+            setLine(bonelines.lefthand, bonelines.lefthando, leftshoulderwts, lefthandwts, lefthandonscreen)
             setLine(bonelines.waist, bonelines.waisto, waistwts, leftwaistwts, waistonscreen)
-            setLine(bonelines.leftwaist, bonelines.leftwaisto, waistwts, leftwaistwts, headonscreen) -- drawing, from, to, oonscreen
-            setLine(bonelines.leftfoot, bonelines.leftfooto, bonelines.leftwaist.To, leftfootwts, headonscreen)
-            setLine(bonelines.rightwaist, bonelines.rightwaisto, waistwts, rightwaistwts, headonscreen)
-            setLine(bonelines.rightfoot, bonelines.rightfooto, bonelines.rightwaist.To, rightfootwts, headonscreen)
+            setLine(bonelines.leftwaist, bonelines.leftwaisto, waistwts, leftwaistwts, leftwaistonscreen)
+            setLine(bonelines.leftfoot, bonelines.leftfooto, leftwaistwts, leftfootwts, leftfootonscreen)
+            setLine(bonelines.rightwaist, bonelines.rightwaisto, waistwts, rightwaistwts, rightwaistonscreen)
+            setLine(bonelines.rightfoot, bonelines.rightfooto, rightwaistwts, rightfootwts, rightfootonscreen)
         end
         -- 
         --
